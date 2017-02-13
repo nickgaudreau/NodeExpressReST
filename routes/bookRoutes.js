@@ -3,32 +3,13 @@ var express = require('express'); // import express object reference
 // function is good to if needed pass in data/test
 var routes = function (Book) {
     var bookRouter = express.Router(); // router instance
-
+    // get this controller reference
+    var bookController = require('../controllers/bookController')(Book); //pass in Book on require
+    
     // Get all
     bookRouter.route('/')
-        .post(function (req, res) {
-            // use body parser to parse post data into JSON
-            var book = new Book(req.body);
-            // create new book -> document -> in mongodb 
-            book.save();
-            console.log(book);
-            // send status created  and book returned
-            res.status(201).send(book);
-        })
-        .get(function (req, res) {
-            // query string ... like OData
-            var query = req.query;
-            Book.find(query, function (err, books) {
-                if (err) {
-                    console.error(err);
-                    res.status(500).send(err); // send 500 and details to cleint
-                }
-                else {
-                    console.log('success');
-                    res.json(books);
-                }
-            });
-        });
+        .post(bookController.post)
+        .get(bookController.get);
 
     // Middleware / services... to intercept request, do something, then go to next step below route (or could be another service/middleware)
     // and handle error / status
@@ -56,7 +37,12 @@ var routes = function (Book) {
     bookRouter.route('/:bookId')
         .get(function (req, res) {
             console.log('get by id success');
-            res.json(req.book);
+            var returnBook = req.book.toJSON();
+
+            returnBook.links = {};
+            var newLink = 'http://' + req.headers.host + '/api/books/?genre=' + returnBook.genre;
+            returnBook.links.FilterByThisGenre = newLink.replace(' ', '%20');
+            res.json(returnBook);
         })
         .put(function (req, res) {
             // params bookId must match match the route string above e.g. '/Books/:bookId'
