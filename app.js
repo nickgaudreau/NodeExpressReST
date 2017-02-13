@@ -1,5 +1,6 @@
 var express = require('express'); // import express object reference 
 var mongoose = require('mongoose');
+var bodyParser = require('body-parser');
 
 // open connection to DB, passing in mongodb conn string => like a dbContext
 var db = mongoose.connect('mongodb://localhost:12345/bookApi');
@@ -13,49 +14,24 @@ var app = express();
 // setup a port
 var port = process.env.PORT || 3333; // if this does not return : process.env.PORT return 3333
 
-var bookRouter = express.Router(); // router instance
+// body parser config
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-// Get all
-bookRouter.route('/Books')
-    .get(function(req, res){
-        // query string ... like OData
-        var query = req.query;
-        Book.find(query, function(err, books){
-            if(err){
-                console.error(err);
-                res.status(500).send(err); // send 500 and details to cleint
-            }
-            else{
-                console.log('success');
-                res.json(books);
-            }
-        });
-    });
+// require book routes file
+var bookRouter = require('./routes/bookRoutes')(Book);// exec () to return bookRouter
 
-// Get by ID
-bookRouter.route('/Books/:bookId')
-    .get(function(req, res){
-        // params bookId must match match the route string above e.g. '/Books/:bookId'
-        Book.findById(req.params.bookId ,function(err, book){
-            if(err){
-                console.error(err);
-                res.status(500).send(err); // send 500 and details to cleint
-            }
-            else{
-                console.log('success');
-                res.json(book);
-            }
-        });
-    });
-
-app.use('/api', bookRouter);
+// define URLs
+app.use('/api/books', bookRouter);
+//app.use('/api/authors', authorRouter); for more...
 
 // setup a handler for a route, when it hits the root
 // param root, callback()
-app.get('/', function(req, res){
-    // send => string of text
-    res.send('Hi from express ReST web api using node and gulp')
-})
+app.get('/',
+    function(req, res) {
+        // send => string of text
+        res.send('Hi from express ReST web api using node and gulp');
+    });
 
 // Losten for connections: must listen to port and we''ll simply log on success listen to port
 app.listen(port, function(){
